@@ -1,0 +1,26 @@
+{
+  "name": "AWTRIX 3",
+  "mode": "codebase",
+  "sources": [
+    { "path": "src/", "exclude": [] },
+    { "path": "lib/", "exclude": [] },
+    { "path": "docs/", "exclude": ["assets/", "awtrix2_flasher/", "Test_Flasher/", "ulanzi_flasher/"] }
+  ],
+  "output": "wiki",
+  "link_style": "markdown",
+  "deep_scan": true,
+  "code_extensions": [".cpp", ".h", ".md", ".json"],
+  "knowledge_files": ["README.md", "*.md"],
+  "topic_hints": [
+    "display-manager",
+    "apps-system",
+    "mqtt-integration",
+    "http-server",
+    "periphery-hardware",
+    "effects-overlays",
+    "games",
+    "home-assistant",
+    "api-reference",
+    "sound-system"
+  ]
+}
