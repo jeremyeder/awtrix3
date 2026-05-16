@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pio run:*)",
+      "Bash(pio device monitor:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git branch:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "If the file being edited is src/Globals.cpp, BLOCK the edit and warn the user that this file is gitignored and contains local settings/VERSION. Suggest editing Globals.h instead for declarations."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CC_EDIT_FILE_PATH\" | grep -qE '\\.(cpp|h|hpp)$'; then echo '[compile-check] Verifying build...'; pio run -e ulanzi 2>&1 | tail -5; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
