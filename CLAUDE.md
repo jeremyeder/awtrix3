@@ -2,52 +2,39 @@
 
 ESP32 firmware for the Ulanzi Smart Pixel Clock (TC001) and AWTRIX 2 upgrade boards. Built with PlatformIO + Arduino framework.
 
+## Conventions
+
+- **CLAUDE.md is the single source of truth** for all project and agent instructions. AGENTS.md is a symlink to this file. Do not create a separate AGENTS.md — keep everything here.
+- Use non-interactive flags for shell commands (`cp -f`, `mv -f`, `rm -f`) to avoid hanging on confirmation prompts.
+
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:7510c1e2 -->
 ## Beads Issue Tracker
 
-This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
+This project uses **bd (beads)** for issue tracking. Run `bd prime` for full workflow context.
 
-### Quick Reference
+Issues live in a local Dolt database (`.beads/dolt/`). Sync uses `bd dolt push/pull` via `refs/dolt/data` on your git remote — separate from code in `refs/heads/*`. `.beads/issues.jsonl` is a passive export, not the wire protocol. See [SYNC_CONCEPTS.md](https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md) for details.
 
 ```bash
 bd ready              # Find available work
 bd show <id>          # View issue details
-bd update <id> --claim  # Claim work
+bd update <id> --claim  # Claim work atomically
 bd close <id>         # Complete work
+bd dolt push          # Push beads data to remote
 ```
 
-### Rules
-
+**Rules:**
 - Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
-- Run `bd prime` for detailed command reference and session close protocol
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
-
-**Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
 
 ## Session Completion
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+When ending a work session, complete ALL steps. Work is NOT complete until `git push` succeeds.
 
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
+1. File issues for remaining work
+2. Run quality gates if code changed (`pio run -e ulanzi`)
+3. Update issue status — close finished work, update in-progress items
+4. Push to remote: `git pull --rebase && git push`
+5. Verify: `git status` must show "up to date with origin"
 <!-- END BEADS INTEGRATION -->
 
 ## Build
