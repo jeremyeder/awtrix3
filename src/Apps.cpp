@@ -376,7 +376,7 @@ void WeatherApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t 
     matrix->drawRGBBitmap(x, y, icon_1158, 8, 8);
     DisplayManager.setCursor(10 + x, 6 + y);
 
-    if (OPENWEATHER_API_KEY.isEmpty() || OPENWEATHER_LAT.isEmpty() || OPENWEATHER_LON.isEmpty())
+    if (OPENMETEO_LAT.isEmpty() || OPENMETEO_LON.isEmpty())
     {
         DisplayManager.matrixPrint("SET");
         return;
@@ -400,14 +400,10 @@ void WeatherApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t 
     DisplayManager.setCursor(cursorX + x, 6 + y);
     DisplayManager.matrixPrint(WEATHER_TEMP);
 
-    String units = OPENWEATHER_UNITS;
+    String units = OPENMETEO_UNITS;
     units.trim();
     units.toLowerCase();
-    if (units == "standard")
-    {
-        DisplayManager.matrixPrint("K");
-    }
-    else if (units == "imperial" || (!IS_CELSIUS && units.isEmpty()))
+    if (units == "fahrenheit" || units == "imperial" || (!IS_CELSIUS && units.isEmpty()))
     {
         DisplayManager.matrixPrint(utf8ascii("°F"));
     }

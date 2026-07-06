@@ -79,9 +79,9 @@ The Dateapp shows the current date of course. There are several dateformats 'DFO
 ---
 ## Weather
 
-The Weather App displays current outdoor temperature from OpenWeather. It stores its API key and coordinates on the clock in `/DoNotTouch.json`, not in an external helper process.
+The Weather App displays current outdoor temperature from Open-Meteo. It stores its coordinates on the clock in `/DoNotTouch.json`, not in an external helper process.
 
-See [OpenWeather](openweather.md) for setup and secret-handling details.
+See [Open-Meteo](openmeteo.md) for setup details.
 
 ---
 ## Temperature  
@@ -337,4 +337,3 @@ This Node-RED flow retrieves and displays the subscriber count of a specified Yo
 To use this flow, replace the "XXX" in the "Data" node with your YouTube API key and ensure that the MQTT broker settings in the "MQTT out" node are correct.
 The flow will then retrieve the subscriber count of the specified YouTube channel and display it on your AWTRIX device along with the icon.
 This Flow uses icon 5029 from LM (Just download it from the awtrix webinterface). You can change the icon in the flow to your favorite one.
-

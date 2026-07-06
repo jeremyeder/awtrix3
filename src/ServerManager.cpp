@@ -78,38 +78,39 @@ static String urlEncode(const String &value)
     return encoded;
 }
 
-static String openWeatherUnits()
+static String openMeteoTemperatureUnit()
 {
-    String units = OPENWEATHER_UNITS;
+    String units = OPENMETEO_UNITS;
     units.trim();
     units.toLowerCase();
-    if (units == "standard" || units == "metric" || units == "imperial")
-        return units;
-    return IS_CELSIUS ? "metric" : "imperial";
+    if (units == "fahrenheit" || units == "imperial")
+        return "fahrenheit";
+    if (units == "celsius" || units == "metric")
+        return "celsius";
+    return IS_CELSIUS ? "celsius" : "fahrenheit";
 }
 
-static bool openWeatherConfigured()
+static bool openMeteoConfigured()
 {
-    return !OPENWEATHER_API_KEY.isEmpty() && !OPENWEATHER_LAT.isEmpty() && !OPENWEATHER_LON.isEmpty();
+    return !OPENMETEO_LAT.isEmpty() && !OPENMETEO_LON.isEmpty();
 }
 
-static void fetchOpenWeather()
+static void fetchOpenMeteo()
 {
-    if (!openWeatherConfigured() || WiFi.status() != WL_CONNECTED)
+    if (!openMeteoConfigured() || WiFi.status() != WL_CONNECTED)
     {
         WEATHER_READY = false;
-        WEATHER_ERROR = openWeatherConfigured() ? "NET" : "CFG";
+        WEATHER_ERROR = openMeteoConfigured() ? "NET" : "CFG";
         return;
     }
 
-    String url = "https://api.openweathermap.org/data/2.5/weather?lat=";
-    url += urlEncode(OPENWEATHER_LAT);
-    url += "&lon=";
-    url += urlEncode(OPENWEATHER_LON);
-    url += "&units=";
-    url += openWeatherUnits();
-    url += "&appid=";
-    url += urlEncode(OPENWEATHER_API_KEY);
+    String url = "https://api.open-meteo.com/v1/forecast?latitude=";
+    url += urlEncode(OPENMETEO_LAT);
+    url += "&longitude=";
+    url += urlEncode(OPENMETEO_LON);
+    url += "&current=temperature_2m,relative_humidity_2m,weather_code";
+    url += "&temperature_unit=";
+    url += openMeteoTemperatureUnit();
 
     WiFiClientSecure client;
     client.setInsecure();
@@ -141,8 +142,8 @@ static void fetchOpenWeather()
         return;
     }
 
-    float temp = doc["main"]["temp"] | NAN;
-    int humidity = doc["main"]["humidity"] | -1;
+    float temp = doc["current"]["temperature_2m"] | NAN;
+    int humidity = doc["current"]["relative_humidity_2m"] | -1;
     if (isnan(temp) || humidity < 0)
     {
         WEATHER_READY = false;
@@ -152,27 +153,27 @@ static void fetchOpenWeather()
 
     WEATHER_TEMP = String(static_cast<int>(round(temp)));
     WEATHER_HUM = String(humidity);
-    WEATHER_CODE = doc["weather"][0]["id"] | 0;
-    WEATHER_CONDITION = doc["weather"][0]["main"].as<String>();
+    WEATHER_CODE = doc["current"]["weather_code"] | 0;
+    WEATHER_CONDITION = String(WEATHER_CODE);
     WEATHER_READY = true;
     WEATHER_UPDATED = millis();
     WEATHER_ERROR = "";
 }
 
-static void tickOpenWeather()
+static void tickOpenMeteo()
 {
     static unsigned long lastWeatherFetch = 0;
     if (!SHOW_WEATHER)
         return;
 
-    uint32_t intervalSeconds = OPENWEATHER_INTERVAL < 300 ? 300 : OPENWEATHER_INTERVAL;
+    uint32_t intervalSeconds = OPENMETEO_INTERVAL < 300 ? 300 : OPENMETEO_INTERVAL;
     unsigned long intervalMs = intervalSeconds * 1000UL;
     unsigned long now = millis();
     if (lastWeatherFetch != 0 && now - lastWeatherFetch < intervalMs)
         return;
 
     lastWeatherFetch = now;
-    fetchOpenWeather();
+    fetchOpenMeteo();
 }
 
 // The getter for the instantiated singleton instance
@@ -382,11 +383,10 @@ void ServerManager_::setup()
         mws.addOption("Timezone", NTP_TZ);
         mws.addHTML("<p>Find your timezone at <a href='https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv' target='_blank' rel='noopener noreferrer'>posix_tz_db</a>.</p>", "tz_link");
         mws.addOptionBox("Weather");
-        mws.addOption("OpenWeather API Key", OPENWEATHER_API_KEY, true);
-        mws.addOption("OpenWeather Lat", OPENWEATHER_LAT);
-        mws.addOption("OpenWeather Lon", OPENWEATHER_LON);
-        mws.addOption("OpenWeather Units", OPENWEATHER_UNITS);
-        mws.addOption("OpenWeather Interval", OPENWEATHER_INTERVAL, 300.0, 86400.0, 60.0);
+        mws.addOption("Open-Meteo Lat", OPENMETEO_LAT);
+        mws.addOption("Open-Meteo Lon", OPENMETEO_LON);
+        mws.addOption("Open-Meteo Units", OPENMETEO_UNITS);
+        mws.addOption("Open-Meteo Interval", OPENMETEO_INTERVAL, 300.0, 86400.0, 60.0);
         mws.addOptionBox("Icons");
         mws.addHTML(custom_html, "icon_html");
         mws.addCSS(custom_css);
@@ -427,7 +427,7 @@ void ServerManager_::setup()
 void ServerManager_::tick()
 {
     mws.run();
-    tickOpenWeather();
+    tickOpenMeteo();
 
     if (!AP_MODE)
     {
@@ -525,15 +525,13 @@ void ServerManager_::loadSettings()
             AUTH_USER = doc["Auth Username"].as<String>();
         if (doc["Auth Password"].is<String>())
             AUTH_PASS = doc["Auth Password"].as<String>();
-        OPENWEATHER_API_KEY = jsonStringValue(doc, "OpenWeather API Key-hidden", jsonStringValue(doc, "OpenWeather API Key", OPENWEATHER_API_KEY));
-        OPENWEATHER_LAT = jsonStringValue(doc, "OpenWeather Lat", OPENWEATHER_LAT);
-        OPENWEATHER_LON = jsonStringValue(doc, "OpenWeather Lon", OPENWEATHER_LON);
-        OPENWEATHER_UNITS = jsonStringValue(doc, "OpenWeather Units", OPENWEATHER_UNITS);
-        OPENWEATHER_INTERVAL = jsonUIntValue(doc, "OpenWeather Interval", OPENWEATHER_INTERVAL);
-        OPENWEATHER_API_KEY.trim();
-        OPENWEATHER_LAT.trim();
-        OPENWEATHER_LON.trim();
-        OPENWEATHER_UNITS.trim();
+        OPENMETEO_LAT = jsonStringValue(doc, "Open-Meteo Lat", jsonStringValue(doc, "OpenWeather Lat", OPENMETEO_LAT));
+        OPENMETEO_LON = jsonStringValue(doc, "Open-Meteo Lon", jsonStringValue(doc, "OpenWeather Lon", OPENMETEO_LON));
+        OPENMETEO_UNITS = jsonStringValue(doc, "Open-Meteo Units", jsonStringValue(doc, "OpenWeather Units", OPENMETEO_UNITS));
+        OPENMETEO_INTERVAL = jsonUIntValue(doc, "Open-Meteo Interval", jsonUIntValue(doc, "OpenWeather Interval", OPENMETEO_INTERVAL));
+        OPENMETEO_LAT.trim();
+        OPENMETEO_LON.trim();
+        OPENMETEO_UNITS.trim();
 
         file.close();
         DisplayManager.applyAllSettings();

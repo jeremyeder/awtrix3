@@ -16,7 +16,7 @@
   - [Apps](apps.md)
      - [Native Apps](apps.md#native-apps)
      - [Custom Apps](apps.md#custom-apps)
-  - [OpenWeather](openweather.md)
+  - [Open-Meteo](openmeteo.md)
   - [Effects](effects.md)
   - [Icons](icons.md)
   - [Sounds](sounds.md)
