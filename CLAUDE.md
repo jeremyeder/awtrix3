@@ -94,6 +94,7 @@ Supporting modules:
 - `src/Globals.cpp` is **gitignored** — contains the VERSION string and default settings. CI generates it. You need a local copy to build.
 - MQTT packet size is set to 8192 bytes via `-DMQTT_MAX_PACKET_SIZE=8192` build flag.
 - "Apps" in AWTRIX are not standalone — they're dynamic display pages driven by external systems via MQTT/HTTP. The device has no app logic itself.
+- Exception: the native `Weather` app intentionally runs on-device and fetches OpenWeather directly because it must keep working without a companion computer. Its key and coordinates live in `/DoNotTouch.json`, not in `/api/settings` or source control.
 - The display is an 8x32 LED matrix (256 LEDs) using FastLED + NeoMatrix.
 - Custom fonts in `src/AwtrixFont.h` — not standard Arduino fonts.
 - LittleFS is used for icon and file storage on the ESP32 flash.

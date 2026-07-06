@@ -34,10 +34,6 @@ uint32_t COLOR_OFF = 0xFFFFFF;       // Weiß
 
 uint16_t nativeAppsCount;
 
-int WEATHER_CODE;
-String WEATHER_TEMP;
-String WEATHER_HUM;
-
 std::vector<std::pair<String, AppCallback>> Apps;
 String currentCustomApp;
 std::map<String, CustomApp> customApps;
@@ -367,6 +363,57 @@ void TempApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
         double tempF = (CURRENT_TEMP * 9 / 5) + 32;
         DisplayManager.matrixPrint(tempF, TEMP_DECIMAL_PLACES);
         DisplayManager.matrixPrint(utf8ascii("°F"));
+    }
+}
+
+void WeatherApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer)
+{
+    if (notifyFlag)
+        return;
+    CURRENT_APP = "Weather";
+    currentCustomApp = "";
+    DisplayManager.getInstance().resetTextColor();
+    matrix->drawRGBBitmap(x, y, icon_1158, 8, 8);
+    DisplayManager.setCursor(10 + x, 6 + y);
+
+    if (OPENWEATHER_API_KEY.isEmpty() || OPENWEATHER_LAT.isEmpty() || OPENWEATHER_LON.isEmpty())
+    {
+        DisplayManager.matrixPrint("SET");
+        return;
+    }
+
+    if (!WEATHER_READY)
+    {
+        if (!WEATHER_ERROR.isEmpty())
+        {
+            String errorText = "E" + WEATHER_ERROR;
+            DisplayManager.matrixPrint(errorText.substring(0, 4));
+        }
+        else
+        {
+            DisplayManager.matrixPrint("...");
+        }
+        return;
+    }
+
+    int cursorX = WEATHER_TEMP.length() >= 3 ? 8 : 10;
+    DisplayManager.setCursor(cursorX + x, 6 + y);
+    DisplayManager.matrixPrint(WEATHER_TEMP);
+
+    String units = OPENWEATHER_UNITS;
+    units.trim();
+    units.toLowerCase();
+    if (units == "standard")
+    {
+        DisplayManager.matrixPrint("K");
+    }
+    else if (units == "imperial" || (!IS_CELSIUS && units.isEmpty()))
+    {
+        DisplayManager.matrixPrint(utf8ascii("°F"));
+    }
+    else
+    {
+        DisplayManager.matrixPrint(utf8ascii("°C"));
     }
 }
 

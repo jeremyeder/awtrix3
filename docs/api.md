@@ -402,6 +402,7 @@ You can adjust each property in the JSON object according to your preferences. I
 | `SSPEED`      | integer                   | Scroll speed modification.                                                                          | Percentage of original scroll speed                | 100     |
 | `TIM`         | boolean                   | Enable or disable the native time app (requires reboot).                                            | `true`/`false`                                     | true    |
 | `DAT`         | boolean                   | Enable or disable the native date app (requires reboot).                                            | `true`/`false`                                     | true    |
+| `WEA`         | boolean                   | Enable or disable the native OpenWeather app (requires reboot).                                     | `true`/`false`                                     | false   |
 | `HUM`         | boolean                   | Enable or disable the native humidity app (requires reboot).                                        | `true`/`false`                                     | true    |
 | `TEMP`        | boolean                   | Enable or disable the native temperature app (requires reboot).                                     | `true`/`false`                                     | true    |
 | `BAT`         | boolean                   | Enable or disable the native battery app (requires reboot).                                         | `true`/`false`                                     | true    |

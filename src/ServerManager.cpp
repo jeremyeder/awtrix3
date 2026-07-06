@@ -13,8 +13,11 @@
 #include "PowerManager.h"
 #include <WiFiUdp.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include "Games/GameManager.h"
 #include <EEPROM.h>
+#include <ctype.h>
+#include <math.h>
 
 WiFiUDP udp;
 
@@ -33,6 +36,144 @@ FSWebServer mws(LittleFS, server);
 
 // Erstelle eine Server-Instanz
 WiFiServer TCPserver(8080);
+
+static String jsonStringValue(DynamicJsonDocument &doc, const char *key, const String &fallback = "")
+{
+    JsonVariant value = doc[key];
+    if (value.is<JsonObject>() && value["value"].is<String>())
+        return value["value"].as<String>();
+    if (value.is<String>())
+        return value.as<String>();
+    return fallback;
+}
+
+static uint32_t jsonUIntValue(DynamicJsonDocument &doc, const char *key, uint32_t fallback)
+{
+    JsonVariant value = doc[key];
+    if (value.is<JsonObject>() && value["value"].is<uint32_t>())
+        return value["value"].as<uint32_t>();
+    if (value.is<uint32_t>())
+        return value.as<uint32_t>();
+    return fallback;
+}
+
+static String urlEncode(const String &value)
+{
+    const char *hex = "0123456789ABCDEF";
+    String encoded;
+    for (uint16_t i = 0; i < value.length(); i++)
+    {
+        unsigned char c = static_cast<unsigned char>(value.charAt(i));
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~')
+        {
+            encoded += static_cast<char>(c);
+        }
+        else
+        {
+            encoded += '%';
+            encoded += hex[(c >> 4) & 0x0F];
+            encoded += hex[c & 0x0F];
+        }
+    }
+    return encoded;
+}
+
+static String openWeatherUnits()
+{
+    String units = OPENWEATHER_UNITS;
+    units.trim();
+    units.toLowerCase();
+    if (units == "standard" || units == "metric" || units == "imperial")
+        return units;
+    return IS_CELSIUS ? "metric" : "imperial";
+}
+
+static bool openWeatherConfigured()
+{
+    return !OPENWEATHER_API_KEY.isEmpty() && !OPENWEATHER_LAT.isEmpty() && !OPENWEATHER_LON.isEmpty();
+}
+
+static void fetchOpenWeather()
+{
+    if (!openWeatherConfigured() || WiFi.status() != WL_CONNECTED)
+    {
+        WEATHER_READY = false;
+        WEATHER_ERROR = openWeatherConfigured() ? "NET" : "CFG";
+        return;
+    }
+
+    String url = "https://api.openweathermap.org/data/2.5/weather?lat=";
+    url += urlEncode(OPENWEATHER_LAT);
+    url += "&lon=";
+    url += urlEncode(OPENWEATHER_LON);
+    url += "&units=";
+    url += openWeatherUnits();
+    url += "&appid=";
+    url += urlEncode(OPENWEATHER_API_KEY);
+
+    WiFiClientSecure client;
+    client.setInsecure();
+    HTTPClient http;
+    http.setTimeout(5000);
+    if (!http.begin(client, url))
+    {
+        WEATHER_READY = false;
+        WEATHER_ERROR = "NET";
+        return;
+    }
+
+    int status = http.GET();
+    if (status != HTTP_CODE_OK)
+    {
+        WEATHER_READY = false;
+        WEATHER_ERROR = status > 0 ? String(status) : "NET";
+        http.end();
+        return;
+    }
+
+    DynamicJsonDocument doc(2048);
+    DeserializationError error = deserializeJson(doc, http.getStream());
+    http.end();
+    if (error)
+    {
+        WEATHER_READY = false;
+        WEATHER_ERROR = "JSON";
+        return;
+    }
+
+    float temp = doc["main"]["temp"] | NAN;
+    int humidity = doc["main"]["humidity"] | -1;
+    if (isnan(temp) || humidity < 0)
+    {
+        WEATHER_READY = false;
+        WEATHER_ERROR = "DATA";
+        return;
+    }
+
+    WEATHER_TEMP = String(static_cast<int>(round(temp)));
+    WEATHER_HUM = String(humidity);
+    WEATHER_CODE = doc["weather"][0]["id"] | 0;
+    WEATHER_CONDITION = doc["weather"][0]["main"].as<String>();
+    WEATHER_READY = true;
+    WEATHER_UPDATED = millis();
+    WEATHER_ERROR = "";
+}
+
+static void tickOpenWeather()
+{
+    static unsigned long lastWeatherFetch = 0;
+    if (!SHOW_WEATHER)
+        return;
+
+    uint32_t intervalSeconds = OPENWEATHER_INTERVAL < 300 ? 300 : OPENWEATHER_INTERVAL;
+    unsigned long intervalMs = intervalSeconds * 1000UL;
+    unsigned long now = millis();
+    if (lastWeatherFetch != 0 && now - lastWeatherFetch < intervalMs)
+        return;
+
+    lastWeatherFetch = now;
+    fetchOpenWeather();
+}
 
 // The getter for the instantiated singleton instance
 ServerManager_ &ServerManager_::getInstance()
@@ -240,6 +381,12 @@ void ServerManager_::setup()
         mws.addOption("NTP Server", NTP_SERVER);
         mws.addOption("Timezone", NTP_TZ);
         mws.addHTML("<p>Find your timezone at <a href='https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv' target='_blank' rel='noopener noreferrer'>posix_tz_db</a>.</p>", "tz_link");
+        mws.addOptionBox("Weather");
+        mws.addOption("OpenWeather API Key", OPENWEATHER_API_KEY, true);
+        mws.addOption("OpenWeather Lat", OPENWEATHER_LAT);
+        mws.addOption("OpenWeather Lon", OPENWEATHER_LON);
+        mws.addOption("OpenWeather Units", OPENWEATHER_UNITS);
+        mws.addOption("OpenWeather Interval", OPENWEATHER_INTERVAL, 300.0, 86400.0, 60.0);
         mws.addOptionBox("Icons");
         mws.addHTML(custom_html, "icon_html");
         mws.addCSS(custom_css);
@@ -280,6 +427,7 @@ void ServerManager_::setup()
 void ServerManager_::tick()
 {
     mws.run();
+    tickOpenWeather();
 
     if (!AP_MODE)
     {
@@ -377,6 +525,15 @@ void ServerManager_::loadSettings()
             AUTH_USER = doc["Auth Username"].as<String>();
         if (doc["Auth Password"].is<String>())
             AUTH_PASS = doc["Auth Password"].as<String>();
+        OPENWEATHER_API_KEY = jsonStringValue(doc, "OpenWeather API Key-hidden", jsonStringValue(doc, "OpenWeather API Key", OPENWEATHER_API_KEY));
+        OPENWEATHER_LAT = jsonStringValue(doc, "OpenWeather Lat", OPENWEATHER_LAT);
+        OPENWEATHER_LON = jsonStringValue(doc, "OpenWeather Lon", OPENWEATHER_LON);
+        OPENWEATHER_UNITS = jsonStringValue(doc, "OpenWeather Units", OPENWEATHER_UNITS);
+        OPENWEATHER_INTERVAL = jsonUIntValue(doc, "OpenWeather Interval", OPENWEATHER_INTERVAL);
+        OPENWEATHER_API_KEY.trim();
+        OPENWEATHER_LAT.trim();
+        OPENWEATHER_LON.trim();
+        OPENWEATHER_UNITS.trim();
 
         file.close();
         DisplayManager.applyAllSettings();

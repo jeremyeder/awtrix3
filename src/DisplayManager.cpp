@@ -1102,14 +1102,15 @@ void DisplayManager_::loadNativeApps()
 
   updateApp("Time", TimeApp, SHOW_TIME, 0);
   updateApp("Date", DateApp, SHOW_DATE, 1);
+  updateApp("Weather", WeatherApp, SHOW_WEATHER, 2);
 
   if (SENSOR_READING)
   {
-    updateApp("Temperature", TempApp, SHOW_TEMP, 2);
-    updateApp("Humidity", HumApp, SHOW_HUM, 3);
+    updateApp("Temperature", TempApp, SHOW_TEMP, 3);
+    updateApp("Humidity", HumApp, SHOW_HUM, 4);
   }
 #ifdef ULANZI
-  updateApp("Battery", BatApp, SHOW_BAT, 4);
+  updateApp("Battery", BatApp, SHOW_BAT, 5);
 #endif
 
   ui->setApps(Apps);
@@ -1535,6 +1536,10 @@ std::pair<String, AppCallback> getNativeAppByName(const String &appName)
   else if (appName == "Date")
   {
     return std::make_pair("Date", DateApp);
+  }
+  else if (appName == "Weather")
+  {
+    return std::make_pair("Weather", WeatherApp);
   }
   else if (appName == "Temperature")
   {
@@ -2054,6 +2059,7 @@ String DisplayManager_::getSettings()
   doc["SSPEED"] = SCROLL_SPEED;
   doc["TIM"] = SHOW_TIME;
   doc["DAT"] = SHOW_DATE;
+  doc["WEA"] = SHOW_WEATHER;
   doc["HUM"] = SHOW_HUM;
   doc["TEMP"] = SHOW_TEMP;
   doc["BAT"] = SHOW_BAT;
@@ -2128,6 +2134,7 @@ void DisplayManager_::setNewSettings(const char *json)
   BLOCK_NAVIGATION = doc.containsKey("BLOCKN") ? doc["BLOCKN"].as<bool>() : BLOCK_NAVIGATION;
   SHOW_TIME = doc.containsKey("TIM") ? doc["TIM"].as<bool>() : SHOW_TIME;
   SHOW_DATE = doc.containsKey("DAT") ? doc["DAT"].as<bool>() : SHOW_DATE;
+  SHOW_WEATHER = doc.containsKey("WEA") ? doc["WEA"].as<bool>() : SHOW_WEATHER;
   SHOW_HUM = doc.containsKey("HUM") ? doc["HUM"].as<bool>() : SHOW_HUM;
   SHOW_TEMP = doc.containsKey("TEMP") ? doc["TEMP"].as<bool>() : SHOW_TEMP;
   SHOW_BAT = doc.containsKey("BAT") ? doc["BAT"].as<bool>() : SHOW_BAT;
