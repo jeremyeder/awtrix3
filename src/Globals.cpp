@@ -364,6 +364,7 @@ bool SHOW_WEATHER = true;
 bool SHOW_BAT = true;
 String OPENMETEO_LAT = "";
 String OPENMETEO_LON = "";
+String OPENMETEO_LOCATION = "";
 String OPENMETEO_UNITS = "";
 uint32_t OPENMETEO_INTERVAL = 600;
 int WEATHER_CODE = 0;

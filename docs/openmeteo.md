@@ -10,6 +10,7 @@ Configure the device from the AWTRIX web interface after flashing firmware with 
 |-----------|---------|
 | `Open-Meteo Lat` | Latitude for the weather location. |
 | `Open-Meteo Lon` | Longitude for the weather location. |
+| `Open-Meteo Location` | Optional display label, such as `Garner, NC`. When set, the Weather app scrolls the temperature and location across the full matrix. |
 | `Open-Meteo Units` | Optional. Use `celsius`, `fahrenheit`, `metric`, or `imperial`. When empty, the clock follows the `CEL` setting. |
 | `Open-Meteo Interval` | Poll interval in seconds. The firmware enforces a minimum of 300 seconds. Default is 600 seconds. |
 
@@ -25,7 +26,7 @@ Example Settings API payload:
 
 ## Behavior
 
-The app calls Open-Meteo's forecast endpoint with latitude, longitude, current weather variables, and temperature unit. It intentionally uses Open-Meteo's plain HTTP endpoint because the ESP32 can return connection-loss errors with this HTTPS request; no API key or secret is sent. It displays an 8x8 weather icon plus the rounded current temperature on the 32x8 matrix.
+The app calls Open-Meteo's forecast endpoint with latitude, longitude, current weather variables, and temperature unit. It intentionally uses Open-Meteo's plain HTTP endpoint because the ESP32 can return connection-loss errors with this HTTPS request; no API key or secret is sent. With no location label set, it displays an 8x8 weather icon plus the rounded current temperature. With `Open-Meteo Location` set, it scrolls the rounded current temperature and location across the full 32x8 matrix.
 
 Display states:
 

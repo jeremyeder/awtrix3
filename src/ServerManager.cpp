@@ -404,6 +404,7 @@ void ServerManager_::setup()
         mws.addOptionBox("Weather");
         mws.addOption("Open-Meteo Lat", OPENMETEO_LAT);
         mws.addOption("Open-Meteo Lon", OPENMETEO_LON);
+        mws.addOption("Open-Meteo Location", OPENMETEO_LOCATION);
         mws.addOption("Open-Meteo Units", OPENMETEO_UNITS);
         mws.addOption("Open-Meteo Interval", OPENMETEO_INTERVAL, 300.0, 86400.0, 60.0);
         mws.addOptionBox("Icons");
@@ -546,10 +547,12 @@ void ServerManager_::loadSettings()
             AUTH_PASS = doc["Auth Password"].as<String>();
         OPENMETEO_LAT = jsonStringValue(doc, "Open-Meteo Lat", jsonStringValue(doc, "OpenWeather Lat", OPENMETEO_LAT));
         OPENMETEO_LON = jsonStringValue(doc, "Open-Meteo Lon", jsonStringValue(doc, "OpenWeather Lon", OPENMETEO_LON));
+        OPENMETEO_LOCATION = jsonStringValue(doc, "Open-Meteo Location", jsonStringValue(doc, "OpenWeather Location", OPENMETEO_LOCATION));
         OPENMETEO_UNITS = jsonStringValue(doc, "Open-Meteo Units", jsonStringValue(doc, "OpenWeather Units", OPENMETEO_UNITS));
         OPENMETEO_INTERVAL = jsonUIntValue(doc, "Open-Meteo Interval", jsonUIntValue(doc, "OpenWeather Interval", OPENMETEO_INTERVAL));
         OPENMETEO_LAT.trim();
         OPENMETEO_LON.trim();
+        OPENMETEO_LOCATION.trim();
         OPENMETEO_UNITS.trim();
 
         file.close();

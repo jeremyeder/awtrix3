@@ -366,6 +366,57 @@ void TempApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
     }
 }
 
+static String weatherUnitText()
+{
+    String units = OPENMETEO_UNITS;
+    units.trim();
+    units.toLowerCase();
+    if (units == "fahrenheit" || units == "imperial" || (!IS_CELSIUS && units.isEmpty()))
+        return utf8ascii("°F");
+    return utf8ascii("°C");
+}
+
+static void printWeatherText(const String &text, MatrixDisplayUiState *state, int16_t x, int16_t y)
+{
+    static String previousText;
+    static float scrollPosition = 0;
+    static int16_t scrollDelay = 0;
+    const byte textCase = 2;
+
+    uint16_t textWidth = getTextWidth(text.c_str(), textCase);
+    bool shouldScroll = textWidth > 32;
+
+    if (previousText != text)
+    {
+        previousText = text;
+        scrollPosition = shouldScroll ? 0 : ((32 - textWidth) / 2);
+        scrollDelay = 0;
+    }
+
+    int16_t textX = scrollPosition;
+    if (shouldScroll && state->appState != IN_TRANSITION)
+    {
+        if (scrollPosition <= -textWidth)
+        {
+            scrollPosition = 0;
+            scrollDelay = 0;
+        }
+        else if (scrollDelay > MATRIX_FPS)
+        {
+            if (state->appState == FIXED)
+                scrollPosition -= movementFactor * ((float)SCROLL_SPEED / 100);
+        }
+        else
+        {
+            ++scrollDelay;
+            scrollPosition = 0;
+        }
+        textX = scrollPosition;
+    }
+
+    DisplayManager.printText(x + textX, 6 + y, text.c_str(), false, textCase);
+}
+
 void WeatherApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer)
 {
     if (notifyFlag)
@@ -373,17 +424,19 @@ void WeatherApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t 
     CURRENT_APP = "Weather";
     currentCustomApp = "";
     DisplayManager.getInstance().resetTextColor();
-    matrix->drawRGBBitmap(x, y, icon_1158, 8, 8);
-    DisplayManager.setCursor(10 + x, 6 + y);
 
     if (OPENMETEO_LAT.isEmpty() || OPENMETEO_LON.isEmpty())
     {
+        matrix->drawRGBBitmap(x, y, icon_1158, 8, 8);
+        DisplayManager.setCursor(10 + x, 6 + y);
         DisplayManager.matrixPrint("SET");
         return;
     }
 
     if (!WEATHER_READY)
     {
+        matrix->drawRGBBitmap(x, y, icon_1158, 8, 8);
+        DisplayManager.setCursor(10 + x, 6 + y);
         if (!WEATHER_ERROR.isEmpty())
         {
             String errorText = "E" + WEATHER_ERROR;
@@ -396,20 +449,18 @@ void WeatherApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t 
         return;
     }
 
-    int cursorX = WEATHER_TEMP.length() >= 3 ? 8 : 10;
-    DisplayManager.setCursor(cursorX + x, 6 + y);
-    DisplayManager.matrixPrint(WEATHER_TEMP);
-
-    String units = OPENMETEO_UNITS;
-    units.trim();
-    units.toLowerCase();
-    if (units == "fahrenheit" || units == "imperial" || (!IS_CELSIUS && units.isEmpty()))
+    if (!OPENMETEO_LOCATION.isEmpty())
     {
-        DisplayManager.matrixPrint(utf8ascii("°F"));
+        String weatherText = WEATHER_TEMP + weatherUnitText() + " " + OPENMETEO_LOCATION;
+        printWeatherText(weatherText, state, x, y);
     }
     else
     {
-        DisplayManager.matrixPrint(utf8ascii("°C"));
+        matrix->drawRGBBitmap(x, y, icon_1158, 8, 8);
+        String weatherText = WEATHER_TEMP + weatherUnitText();
+        uint16_t textWidth = getTextWidth(weatherText.c_str(), 2);
+        int cursorX = 9 + ((24 - textWidth) / 2);
+        DisplayManager.printText(cursorX + x, 6 + y, weatherText.c_str(), false, 2);
     }
 }
 

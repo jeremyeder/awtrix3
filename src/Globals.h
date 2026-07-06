@@ -49,6 +49,7 @@ extern bool SHOW_WEATHER;
 extern bool SHOW_BAT;
 extern String OPENMETEO_LAT;
 extern String OPENMETEO_LON;
+extern String OPENMETEO_LOCATION;
 extern String OPENMETEO_UNITS;
 extern uint32_t OPENMETEO_INTERVAL;
 extern int WEATHER_CODE;
