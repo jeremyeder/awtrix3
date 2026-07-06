@@ -13,7 +13,6 @@
 #include "PowerManager.h"
 #include <WiFiUdp.h>
 #include <HTTPClient.h>
-#include <WiFiClientSecure.h>
 #include "Games/GameManager.h"
 #include <EEPROM.h>
 #include <ctype.h>
@@ -104,7 +103,7 @@ static void fetchOpenMeteo()
         return;
     }
 
-    String url = "https://api.open-meteo.com/v1/forecast?latitude=";
+    String url = "http://api.open-meteo.com/v1/forecast?latitude=";
     url += urlEncode(OPENMETEO_LAT);
     url += "&longitude=";
     url += urlEncode(OPENMETEO_LON);
@@ -112,14 +111,13 @@ static void fetchOpenMeteo()
     url += "&temperature_unit=";
     url += openMeteoTemperatureUnit();
 
-    WiFiClientSecure client;
-    client.setInsecure();
+    WiFiClient client;
     HTTPClient http;
     http.setTimeout(5000);
     if (!http.begin(client, url))
     {
         WEATHER_READY = false;
-        WEATHER_ERROR = "NET";
+        WEATHER_ERROR = "URL";
         return;
     }
 
@@ -127,14 +125,16 @@ static void fetchOpenMeteo()
     if (status != HTTP_CODE_OK)
     {
         WEATHER_READY = false;
-        WEATHER_ERROR = status > 0 ? String(status) : "NET";
+        WEATHER_ERROR = String(status);
         http.end();
         return;
     }
 
-    DynamicJsonDocument doc(2048);
-    DeserializationError error = deserializeJson(doc, http.getStream());
+    String payload = http.getString();
     http.end();
+
+    DynamicJsonDocument doc(2048);
+    DeserializationError error = deserializeJson(doc, payload);
     if (error)
     {
         WEATHER_READY = false;
@@ -169,7 +169,9 @@ static void tickOpenMeteo()
     uint32_t intervalSeconds = OPENMETEO_INTERVAL < 300 ? 300 : OPENMETEO_INTERVAL;
     unsigned long intervalMs = intervalSeconds * 1000UL;
     unsigned long now = millis();
-    if (lastWeatherFetch != 0 && now - lastWeatherFetch < intervalMs)
+    unsigned long retryMs = 30000UL;
+    unsigned long waitMs = WEATHER_READY ? intervalMs : retryMs;
+    if (lastWeatherFetch != 0 && now - lastWeatherFetch < waitMs)
         return;
 
     lastWeatherFetch = now;
@@ -311,6 +313,23 @@ void addHandler()
                     } });
     mws.addHandler("/api/stats", HTTP_GET, []()
                    { mws.webserver->send_P(200, "application/json", DisplayManager.getStats().c_str()); });
+    mws.addHandler("/api/weather", HTTP_GET, []()
+                   {
+                    String payload = "{\"ready\":";
+                    payload += WEATHER_READY ? "true" : "false";
+                    payload += ",\"error\":\"";
+                    payload += WEATHER_ERROR;
+                    payload += "\",\"temp\":\"";
+                    payload += WEATHER_TEMP;
+                    payload += "\",\"hum\":\"";
+                    payload += WEATHER_HUM;
+                    payload += "\",\"code\":";
+                    payload += WEATHER_CODE;
+                    payload += ",\"updated_ms\":";
+                    payload += WEATHER_UPDATED;
+                    payload += "}";
+                    mws.webserver->send(200, "application/json", payload);
+                   });
     mws.addHandler("/api/screen", HTTP_GET, []()
                    { mws.webserver->send_P(200, "application/json", DisplayManager.ledsAsJson().c_str()); });
     mws.addHandler("/api/indicator1", HTTP_POST, []()

@@ -39,6 +39,7 @@ Access various device statistics like battery, RAM, and more:
 | MQTT Topic                      | HTTP URL                           | Description                                    |
 | ------------------------------- | ---------------------------------- | ---------------------------------------------- |
 | `[PREFIX]/stats`                | `http://[IP]/api/stats`            | General device stats (e.g., battery, RAM)      |
+| -                               | `http://[IP]/api/weather`          | Native Open-Meteo weather state and last error |
 | `[PREFIX]/stats/effects`        | `http://[IP]/api/effects`          | List of all effects                            |
 | `[PREFIX]/stats/transitions`    | `http://[IP]/api/transitions`      | List of all transition effects                 |
 | `[PREFIX]/stats/loop`           | `http://[IP]/api/loop`             | List of all apps in the loop                   |

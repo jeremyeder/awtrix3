@@ -25,7 +25,7 @@ Example Settings API payload:
 
 ## Behavior
 
-The app calls Open-Meteo's forecast endpoint with latitude, longitude, current weather variables, and temperature unit. It displays an 8x8 weather icon plus the rounded current temperature on the 32x8 matrix.
+The app calls Open-Meteo's forecast endpoint with latitude, longitude, current weather variables, and temperature unit. It intentionally uses Open-Meteo's plain HTTP endpoint because the ESP32 can return connection-loss errors with this HTTPS request; no API key or secret is sent. It displays an 8x8 weather icon plus the rounded current temperature on the 32x8 matrix.
 
 Display states:
 
@@ -34,7 +34,9 @@ Display states:
 | `SET` | Coordinates are missing. |
 | `...` | Weather is configured and the first fetch is pending. |
 | `E400` | Open-Meteo rejected the request parameters. |
-| `ENET` | The clock is not connected or could not start the request. |
+| `ENET` | The clock WiFi is not connected when the fetch runs. |
+| `EURL` | The clock could not initialize the Open-Meteo request URL. |
+| `E-5` or similar | The ESP32 HTTP client started the request but the connection failed. The app retries failed weather requests every 30 seconds. |
 | `EJSON` | Open-Meteo returned a response the clock could not parse. |
 | `EDATA` | The response did not contain temperature or humidity fields. |
 
